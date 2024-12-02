@@ -18,7 +18,7 @@ else if (error)
 }
 else
 {
-    <BlogCard BlogDtoData="BlogDto" OnEditSave="(async () =>  await RefreshParent())"></BlogCard>
+    <BlogCard BlogDtoData="BlogDto" RefreshParent="GoHome" OnEditSave="(async () =>  await RefreshParent())"></BlogCard>
     <CreateComment BlogId="BlogDto.Id" OnTrigger="(async () =>  await RefreshParent())"></CreateComment>
     @foreach (var comment in BlogDto.Comments)
     {
@@ -47,6 +47,9 @@ else
     {
         try
         {
+            var token = await _localStorage.GetItemAsync<string>("authToken");
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
             var response = await _httpClient.GetAsync($"api/blog/{Id}");
             BlogDto = await response.Content.ReadFromJsonAsync<BlogDto>();
         }
@@ -86,5 +89,10 @@ else
     {
         await GetBlogComments();
         StateHasChanged();
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
     }
 }

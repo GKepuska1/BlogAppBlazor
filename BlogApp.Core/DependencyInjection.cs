@@ -18,7 +18,7 @@ namespace BlogApp.Core
         {
             var connectionString = configuration["ConnectionString"];
 
-            services.AddDbContext<IAppDbContext, AppDbContext>(options => options.UseSqlServer(connectionString));
+            services.AddDbContext<IAppDbContext, AppDbContext>(options => options.UseSqlServer(connectionString), ServiceLifetime.Transient);
 
             services.AddIdentityCore<ApplicationUser>(config =>
             {

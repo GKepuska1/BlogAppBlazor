@@ -42,6 +42,7 @@ else
                             else
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="EditBlog" Color="Color.Default" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="DeleteBlog" Color="Color.Default" />
                             }
                         }
                     </CardHeaderActions>
@@ -77,11 +78,12 @@ else
     public BlogDto BlogDtoData { get; set; }
 
     [Parameter] public EventCallback OnEditSave { get; set; }
+    [Parameter] public EventCallback RefreshParent { get; set; }
 
-    
+    [Inject] NavigationManager NavigationManager { get; set; }
     [Inject] HttpClient _httpClient { get; set; }
     [Inject] ILocalStorageService _localStorage { get; set; }
-    
+
     private ClaimsPrincipal user;
     private bool _editClicked;
 
@@ -105,6 +107,14 @@ else
         IsEditing = true;
         EditableName = BlogDtoData.Name;
         EditableContent = BlogDtoData.Content;
+    }
+
+    private async Task DeleteBlog()
+    {
+        var token = await _localStorage.GetItemAsync<string>("authToken");
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        HttpResponseMessage response = await _httpClient.DeleteAsync($"/api/blog/{BlogDtoData.Id}");
+        await RefreshParent.InvokeAsync();
     }
 
     private async Task SaveBlog()

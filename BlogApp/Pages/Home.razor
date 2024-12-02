@@ -32,7 +32,7 @@ else
                     @foreach (var blog in _blogs)
                     {
                         <MudPaper Elevation="0" Class="pa-3" Style="width: 100%;">
-                            <BlogCard BlogDtoData="blog" OnEditSave="(async () => await RefreshParent())"></BlogCard>
+                            <BlogCard BlogDtoData="blog" RefreshParent="(async () => await RefreshParent())" OnEditSave="(async () => await RefreshParent())"></BlogCard>
                         </MudPaper>
                     }
                 </MudContainer>

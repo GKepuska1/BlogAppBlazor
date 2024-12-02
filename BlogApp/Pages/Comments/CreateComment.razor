@@ -38,36 +38,43 @@
 
     private async Task CreateCommentPostAsync()
     {
-        loadingSubmit = true;
-        var newComment = new CommentDtoCreate
-            {
-                Content = commentContent,
-            };
-
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/comment/{BlogId}")
-            {
-                Content = JsonContent.Create(newComment)
-            };
-
-        var token = await _localStorage.GetItemAsync<string>("authToken");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await _httpClient.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            commentContent = string.Empty;
-            await OnTrigger.InvokeAsync();
-        }
-        else
-        {
-            var result = await response.Content.ReadFromJsonAsync<List<string>>();
-            foreach (var error in result)
+            loadingSubmit = true;
+            var newComment = new CommentDtoCreate
+                {
+                    Content = commentContent,
+                };
+
+            var request = new HttpRequestMessage(HttpMethod.Post, $"/api/comment/{BlogId}")
+                {
+                    Content = JsonContent.Create(newComment)
+                };
+
+            var token = await _localStorage.GetItemAsync<string>("authToken");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
             {
-                _snackbar.Add(error, Severity.Error);
+                commentContent = string.Empty;
+                await OnTrigger.InvokeAsync();
             }
+            else
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<string>>();
+                foreach (var error in result)
+                {
+                    _snackbar.Add(error, Severity.Error);
+                }
+            }
+            loadingSubmit = false;
         }
-        loadingSubmit = false;
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Error);
+        }
     }
 
     private async Task SubmitForm()

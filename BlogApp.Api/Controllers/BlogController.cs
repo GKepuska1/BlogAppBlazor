@@ -12,12 +12,15 @@ namespace BlogApp.Api.Controllers
     public class BlogController : ControllerBase
     {
         private IBlogService _blogService;
+        private ICommentService _commentService;
         private UserManager<ApplicationUser> _userManager;
 
         public BlogController(IBlogService blogService,
+                              ICommentService commentService,
                               UserManager<ApplicationUser> userManager)
         {
             _blogService = blogService;
+            _commentService = commentService;
             _userManager = userManager;
         }
 
@@ -65,6 +68,7 @@ namespace BlogApp.Api.Controllers
         {
             var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
             await _blogService.DeleteAsync(id, currentUser.Id);
+            await _commentService.DeleteCommentsByBlogIdAsync(id);
             return Ok();
         }
     }

@@ -13,7 +13,7 @@ namespace BlogApp.Core.Services
 
         Task<CommentDto> UpdateAsync(int id, CommentDtoCreate comment, string userId);
 
-        Task<CommentDto> DeleteAsync(int id);
+        Task DeleteCommentsByBlogIdAsync(int blogId);
     }
 
     public class CommentService : ICommentService
@@ -39,29 +39,34 @@ namespace BlogApp.Core.Services
 
         public async Task<CommentDto> CreateAsync(int blogId, CommentDtoCreate commentDto, string userId)
         {
-            var comment = await _dbContext.Comments.AddAsync(new Comment()
+            try
             {
-                BlogId = blogId,
-                Content = commentDto.Content,
-                CreatedAt = DateTime.Now,
-                UserId = userId
-            });
-            await _dbContext.SaveChangesAsync();
-            return _mapper.Map<CommentDto>(comment.Entity);
+                var comment = await _dbContext.Comments.AddAsync(new Comment()
+                {
+                    BlogId = blogId,
+                    Content = commentDto.Content,
+                    CreatedAt = DateTime.Now,
+                    UserId = userId
+                });
+                await _dbContext.SaveChangesAsync();
+                return _mapper.Map<CommentDto>(comment.Entity);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error creating comment", ex);
+            }
         }
 
-        public async Task<CommentDto> DeleteAsync(int id)
+        public async Task DeleteCommentsByBlogIdAsync(int blogId)
         {
-            var comment = await _dbContext.Comments.FindAsync(id);
-            if (comment == null)
+            var comments = await _dbContext.Comments.Where(x => x.BlogId == blogId).ToListAsync();
+            if (comments == null)
             {
                 throw new KeyNotFoundException("Comment not found");
             }
 
-            _dbContext.Comments.Remove(comment);
+            _dbContext.Comments.RemoveRange(comments);
             await _dbContext.SaveChangesAsync();
-
-            return _mapper.Map<CommentDto>(comment);
         }
 
         public async Task<CommentDto> UpdateAsync(int id, CommentDtoCreate commentDto, string userId)

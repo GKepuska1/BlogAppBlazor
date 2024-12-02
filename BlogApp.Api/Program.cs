@@ -1,4 +1,5 @@
 using BlogApp.Api;
+using BlogApp.Api.Middleware;
 using BlogApp.Core;
 using BlogApp.Core.Context;
 using Microsoft.OpenApi.Models;
@@ -50,6 +51,7 @@ var app = builder.Build();
 app.UseCors("AllowAll");
 app.UseStaticFiles();
 app.MigrateDatabase<AppDbContext>();
+app.UseMiddleware<ErrorHandlerMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
