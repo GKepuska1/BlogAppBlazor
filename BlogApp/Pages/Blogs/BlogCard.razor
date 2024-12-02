@@ -1,0 +1,144 @@
+﻿@using Blazored.LocalStorage
+@using BlogApp.Domain.Dtos
+@using BlogApp.Pages.Common
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+@using System.Security.Claims
+@using System.Net.Http.Headers
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (user == null)
+{
+    <Spinner></Spinner>
+}
+else
+{
+    <MudGrid Style="height: 100%; width: 100%; margin: auto;" Justify="Justify.Center" AlignItems="AlignItems.Center">
+        <MudItem Style="width:100%">
+            <MudCard Style="cursor: pointer;">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        @if (IsEditing)
+                        {
+                            <MudTextField @bind-Value="EditableName" Label="Name" Variant="Variant.Outlined" />
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body1">@BlogDtoData.Name</MudText>
+                        }
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Posted by @BlogDtoData.User
+                        </MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        @if (CanEdit())
+                        {
+                            @if (IsEditing)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Save" OnClick="SaveBlog" Color="Color.Primary" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Cancel" OnClick="CancelEdit" Color="Color.Secondary" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="EditBlog" Color="Color.Default" />
+                            }
+                        }
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (IsEditing)
+                    {
+                        <MudTextField @bind-Value="EditableContent" Label="Content" Variant="Variant.Outlined" Multiline="true" Rows="8" />
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2">@BlogDtoData.Content</MudText>
+                    }
+                    <MudText Typo="Typo.caption" Color="Color.Info" Style="display: block;">
+                        @BlogDtoData.CreatedAt
+                    </MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudLink Href="@($"/blog/{BlogDtoData.Id}")" Style="text-decoration: none; color: inherit;">
+                        <MudText>
+                            <MudIconButton Icon="@Icons.Material.Filled.CommentBank" Color="Color.Default"></MudIconButton> @BlogDtoData.Comments.Count
+                        </MudText>
+                    </MudLink>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+
+@code {
+    [Parameter]
+    public BlogDto BlogDtoData { get; set; }
+
+    [Parameter] public EventCallback OnEditSave { get; set; }
+
+    
+    [Inject] HttpClient _httpClient { get; set; }
+    [Inject] ILocalStorageService _localStorage { get; set; }
+    
+    private ClaimsPrincipal user;
+    private bool _editClicked;
+
+    private bool IsEditing { get; set; } = false;
+    private string EditableName { get; set; }
+    private string EditableContent { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+    }
+
+    private bool CanEdit()
+    {
+        return user.Identity.Name == BlogDtoData.User;
+    }
+
+    private void EditBlog()
+    {
+        IsEditing = true;
+        EditableName = BlogDtoData.Name;
+        EditableContent = BlogDtoData.Content;
+    }
+
+    private async Task SaveBlog()
+    {
+        BlogDtoData.Name = EditableName;
+        BlogDtoData.Content = EditableContent;
+
+        //request http with auth token
+        var newBlog = new BlogDtoCreate
+            {
+                Name = EditableName,
+                Content = EditableContent
+            };
+
+        var request = new HttpRequestMessage(HttpMethod.Put,$"/api/blog/{BlogDtoData.Id}")
+            {
+                Content = JsonContent.Create(newBlog)
+            };
+
+        var token = await _localStorage.GetItemAsync<string>("authToken");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _httpClient.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await OnEditSave.InvokeAsync();
+        }
+
+        IsEditing = false;
+    }
+
+    private void CancelEdit()
+    {
+        IsEditing = false;
+    }
+}

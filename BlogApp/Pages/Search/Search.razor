@@ -1,0 +1,17 @@
+﻿@using MudBlazor
+
+
+<MudTextField T="string"
+              Label="Search"
+              Immediate="true"
+              TextChanged="@SearchChanged"/>
+
+@code {
+    [Parameter] public EventCallback<string> OnTrigger { get; set; }
+
+
+    private async Task SearchChanged(string value)
+    {
+        await OnTrigger.InvokeAsync(value);
+    }
+}

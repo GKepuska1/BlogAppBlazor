@@ -1,0 +1,90 @@
+﻿@using Blazored.LocalStorage
+@using BlogApp.Domain.Dtos
+@using BlogApp.Pages.Common
+@using MudBlazor
+@using System.Net.Http.Headers
+
+
+@if (loadingSubmit)
+{
+    <Spinner></Spinner>
+}
+else
+{
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h5" GutterBottom="true">Create Blog Post</MudText>
+
+        <MudForm @ref="form" Validated="OnValidSubmit">
+            <MudTextField @bind-Value="blogTitle" Label="Title" For="@(() => blogTitle)" Required="true" />
+            <MudTextField @bind-Value="blogContent" Label="Content" For="@(() => blogContent)" Required="true"
+                          Lines="5" MultiLine="true" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitForm">Submit</MudButton>
+        </MudForm>
+    </MudPaper>
+}
+
+@code {
+
+
+    [Inject] private HttpClient _httpClient { get; set; }
+    [Inject] ILocalStorageService _localStorage { get; set; }
+    [Inject] private ISnackbar _snackbar { get; set; }
+
+    [Parameter] public EventCallback OnTrigger { get; set; }
+
+    private MudForm form;
+    private string blogTitle = string.Empty;
+    private string blogContent = string.Empty;
+    private bool loadingSubmit = false;
+
+
+    private async Task CreateBlogPostAsync()
+    {
+        loadingSubmit = true;
+        var newBlog = new BlogDtoCreate
+            {
+                Name = blogTitle,
+                Content = blogContent,
+                Tags = new List<TagDto>
+            {
+                new TagDto { Name = "Tag1" },
+                new TagDto { Name = "Tag2" }
+            }
+            };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/blog")
+            {
+                Content = JsonContent.Create(newBlog)
+            };
+
+        var token = await _localStorage.GetItemAsync<string>("authToken");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _httpClient.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            blogTitle = string.Empty;
+            blogContent = string.Empty;
+            await OnTrigger.InvokeAsync();
+        }
+        else
+        {
+            var result = await response.Content.ReadFromJsonAsync<List<string>>();
+            foreach (var error in result)
+            {
+                _snackbar.Add(error, Severity.Error);
+            }
+        }
+        loadingSubmit = false;
+    }
+
+    private async Task SubmitForm()
+    {
+        await form.Validate();
+        if (form.IsValid)
+        {
+            await CreateBlogPostAsync();
+        }
+    }
+}

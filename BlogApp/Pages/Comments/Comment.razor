@@ -1,0 +1,25 @@
+﻿@using BlogApp.Domain.Dtos
+@using MudBlazor
+
+<MudGrid Style="height: 100%; width: 100%; margin: auto;" Justify="Justify.Center" AlignItems="AlignItems.Center">
+    <MudItem Style="width:50%">
+        <MudLink Style="text-decoration: none; color: inherit;">
+            <MudCard Style="cursor: pointer;">
+                <MudCardContent>
+                    <MudText Typo="Typo.body2">@CommentDto.Content</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Style="display: block;">
+                        @CommentDto.Username
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Info" Style="display: block;">
+                        @CommentDto.CreatedAt
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudLink>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter]
+    public CommentDto CommentDto { get; set; }
+}

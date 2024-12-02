@@ -1,0 +1,25 @@
+﻿@using BlogApp.Domain.Dtos
+@using MudBlazor
+
+<MudDialog @bind-Visible="ShowDialog" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @BlogDataDto.Name
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @BlogDataDto.Content
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Class="px-10">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public bool ShowDialog { get; set; } = true;
+    [Parameter] public BlogDto BlogDataDto { get; set; }
+
+    private readonly DialogOptions _dialogOptions = new() { FullWidth = true, CloseButton = true, Position = DialogPosition.Center };
+
+    private void Submit() => ShowDialog = false;
+}
