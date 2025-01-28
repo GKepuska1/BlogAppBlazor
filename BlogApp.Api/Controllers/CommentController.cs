@@ -33,7 +33,7 @@ namespace BlogApp.Api.Controllers
         [HttpPost("{blogId}")]
         public async Task<IActionResult> Post(int blogId, [FromBody] CommentDtoCreate commentDto)
         {
-            var blog = _blogService.GetByIdAsync(blogId);
+            var blog = await _blogService.GetByIdAsync(blogId);
             if (blog == null)
             {
                 return NotFound();
@@ -46,7 +46,7 @@ namespace BlogApp.Api.Controllers
         [HttpPut("{blogId}/{id}")]
         public async Task<IActionResult> Put(int blogId, int id, [FromBody] CommentDtoCreate commentDto)
         {
-            var blog = _blogService.GetByIdAsync(blogId);
+            var blog = await _blogService.GetByIdAsync(blogId);
             if (blog == null)
             {
                 return NotFound();
@@ -54,6 +54,25 @@ namespace BlogApp.Api.Controllers
             var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
             var comment = await _commentService.UpdateAsync(id, commentDto, currentUser.Id);
             return Ok(comment);
+        }
+
+
+        [HttpDelete("{blogId}/{id}")]
+        public async Task<IActionResult> Delete(int blogId, int commentId)
+        {
+            var blog = await _blogService.GetByIdAsync(blogId);
+            if (blog == null)
+            {
+                return NotFound();
+            }
+            var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
+            var comment = await _commentService.GetByIdAsync(commentId);
+            if (comment == null || comment.BlogId != blog.Id || comment.UserId != currentUser.Id)
+            {
+                return NotFound();
+            }
+            await _commentService.DeleteCommentAsync(comment);
+            return Ok();
         }
     }
 }

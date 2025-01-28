@@ -10,10 +10,10 @@ namespace BlogApp.Core.Services
     {
         Task<List<CommentDto>> GetByBlogIdAsync(int blogId);
         Task<CommentDto> CreateAsync(int blogId, CommentDtoCreate comment, string userId);
-
         Task<CommentDto> UpdateAsync(int id, CommentDtoCreate comment, string userId);
-
         Task DeleteCommentsByBlogIdAsync(int blogId);
+        Task<Comment> GetByIdAsync(int commentId);
+        Task DeleteCommentAsync(Comment comment);
     }
 
     public class CommentService : ICommentService
@@ -84,5 +84,16 @@ namespace BlogApp.Core.Services
             return _mapper.Map<CommentDto>(comment);
         }
 
+        public async Task<Comment> GetByIdAsync(int commentId)
+        {
+            var comment = await _dbContext.Comments.FindAsync(commentId);
+            return comment;
+        }
+
+        public async Task DeleteCommentAsync(Comment comment)
+        {
+            _dbContext.Comments.Remove(comment);
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }
