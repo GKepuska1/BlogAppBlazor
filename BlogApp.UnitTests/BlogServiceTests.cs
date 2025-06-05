@@ -156,6 +156,21 @@ namespace BlogApp.UnitTests
         }
 
         [Fact]
+        public async Task Search_ShouldThrow_WhenTermIsEmpty()
+        {
+            // Arrange
+            var dbName = Guid.NewGuid().ToString();
+            var context = GetInMemoryDbContext(dbName);
+            context.Blogs.Add(new Blog { Name = "Sample" });
+            await context.SaveChangesAsync();
+
+            var service = new BlogService(context, _mapper);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<ArgumentException>(async () => await service.Search(string.Empty));
+        }
+
+        [Fact]
         public async Task GetTotal_ShouldReturnCount()
         {
             // Arrange
