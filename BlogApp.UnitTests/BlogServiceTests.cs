@@ -36,6 +36,8 @@ namespace BlogApp.UnitTests
             // Arrange
             var dbName = Guid.NewGuid().ToString();
             var context = GetInMemoryDbContext(dbName);
+            context.Users.Add(new ApplicationUser { Id = "user1", UserName = "user1" });
+            await context.SaveChangesAsync();
             var service = new BlogService(context, _mapper);
             var dto = new BlogDtoCreate { Name = "Test Blog", Content = "Test Content" };
 
@@ -46,6 +48,19 @@ namespace BlogApp.UnitTests
             Assert.NotNull(result);
             Assert.Equal("Test Blog", result.Name);
             Assert.Single(context.Blogs);
+        }
+
+        [Fact]
+        public async Task AddAsync_ShouldThrow_WhenDailyLimitReached()
+        {
+            var dbName = Guid.NewGuid().ToString();
+            var context = GetInMemoryDbContext(dbName);
+            context.Users.Add(new ApplicationUser { Id = "user1", UserName = "user1", LastPostDate = DateTime.UtcNow.Date, PostCount = 1 });
+            await context.SaveChangesAsync();
+            var service = new BlogService(context, _mapper);
+            var dto = new BlogDtoCreate { Name = "Test", Content = "c" };
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await service.AddAsync(dto, "user1"));
         }
 
         [Fact]

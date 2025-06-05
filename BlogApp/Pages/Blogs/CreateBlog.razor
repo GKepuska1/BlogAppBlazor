@@ -23,12 +23,29 @@ else
     </MudPaper>
 }
 
+@if(showPaywall)
+{
+    <MudDialog @bind-Visible="showPaywall" Options="_dialogOptions">
+        <TitleContent>
+            <MudText Typo="Typo.h6">Subscription Required</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudText>You have reached your daily limit. Subscribe for €5/month to continue posting.</MudText>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="StartCheckout" Color="Color.Primary">Subscribe</MudButton>
+            <MudButton OnClick="@(() => showPaywall = false)">Close</MudButton>
+        </DialogActions>
+    </MudDialog>
+}
+
 @code {
 
 
     [Inject] private HttpClient _httpClient { get; set; }
     [Inject] ILocalStorageService _localStorage { get; set; }
     [Inject] private ISnackbar _snackbar { get; set; }
+    [Inject] private NavigationManager NavigationManager { get; set; }
 
     [Parameter] public EventCallback OnTrigger { get; set; }
 
@@ -36,7 +53,21 @@ else
     private string blogTitle = string.Empty;
     private string blogContent = string.Empty;
     private bool loadingSubmit = false;
+    private bool showPaywall = false;
+    private string checkoutUrl = string.Empty;
+    private readonly DialogOptions _dialogOptions = new() { FullWidth = true, CloseButton = true, Position = DialogPosition.Center };
 
+
+    private async Task<bool> CheckLimitAsync()
+    {
+        var token = await _localStorage.GetItemAsync<string>("authToken");
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/subscription/check");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var resp = await _httpClient.SendAsync(request);
+        if(!resp.IsSuccessStatusCode) return true;
+        var result = await resp.Content.ReadFromJsonAsync<LimitDto>();
+        return !result!.limitReached;
+    }
 
     private async Task CreateBlogPostAsync()
     {
@@ -84,7 +115,31 @@ else
         await form.Validate();
         if (form.IsValid)
         {
-            await CreateBlogPostAsync();
+            if (await CheckLimitAsync())
+            {
+                await CreateBlogPostAsync();
+            }
+            else
+            {
+                showPaywall = true;
+            }
         }
     }
+
+    private async Task StartCheckout()
+    {
+        var token = await _localStorage.GetItemAsync<string>("authToken");
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/subscription/create-session");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var resp = await _httpClient.SendAsync(req);
+        if(resp.IsSuccessStatusCode)
+        {
+            var result = await resp.Content.ReadFromJsonAsync<CheckoutDto>();
+            checkoutUrl = result!.url;
+            NavigationManager.NavigateTo(checkoutUrl, true);
+        }
+    }
+
+    record LimitDto(bool limitReached, bool subscriptionActive);
+    record CheckoutDto(string sessionId, string url);
 }

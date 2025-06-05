@@ -11,6 +11,8 @@ namespace BlogApp.Core.Context
         public DbSet<Comment> Comments { get; set; }
         public DbSet<BlogTag> BlogTags { get; set; }
         public DbSet<Tag> Tags { get; set; }
+        public DbSet<ApplicationUser> Users { get; set; }
+        public DbSet<ApplicationUser> Users { get; set; }
 
         DbSet<TEntity> Set<TEntity>() where TEntity : class;
 

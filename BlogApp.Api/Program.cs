@@ -3,6 +3,7 @@ using BlogApp.Api.Middleware;
 using BlogApp.Core;
 using BlogApp.Core.Context;
 using Microsoft.OpenApi.Models;
+using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,8 @@ builder.Services.AddSwaggerGen(option =>
         }
     });
 });
+
+Stripe.StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 var app = builder.Build();
 

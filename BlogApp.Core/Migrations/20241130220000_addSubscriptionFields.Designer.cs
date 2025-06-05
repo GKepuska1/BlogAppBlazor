@@ -11,7 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlogApp.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241130220000_addSubscriptionFields")]
+    partial class addSubscriptionFields
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
