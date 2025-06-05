@@ -20,18 +20,18 @@ function App() {
   }
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Blogs</h1>
-      <form onSubmit={handleSubmit} className="space-y-2 mb-4">
-        <input className="border px-2 py-1 w-full" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
-        <input className="border px-2 py-1 w-full" placeholder="Tags comma separated" value={tags} onChange={e => setTags(e.target.value)} />
-        <button className="bg-blue-500 text-white px-4 py-1 rounded" type="submit">Create</button>
+    <div className="container">
+      <h1 className="heading">Blogs</h1>
+      <form onSubmit={handleSubmit} className="form">
+        <input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
+        <input placeholder="Tags comma separated" value={tags} onChange={e => setTags(e.target.value)} />
+        <button className="button" type="submit">Create</button>
       </form>
-      <ul className="space-y-2">
+      <ul className="list">
         {blogs.map(b => (
-          <li key={b.id} className="border p-2 rounded">
-            <h2 className="font-semibold">{b.title}</h2>
-            {b.tags && <p className="text-sm text-gray-500">Tags: {b.tags.join(', ')}</p>}
+          <li key={b.id} className="list-item">
+            <h2>{b.title}</h2>
+            {b.tags && <p className="tags">Tags: {b.tags.join(', ')}</p>}
           </li>
         ))}
       </ul>
