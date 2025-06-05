@@ -32,8 +32,8 @@ Each blog post contains:
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-repo-name/BlogApp.git
-   cd BlogApp
+   git clone https://github.com/your-repo-name/BlogAppBlazor.git
+   cd BlogAppBlazor
    ```
 
 2. **Configure the Database**:
