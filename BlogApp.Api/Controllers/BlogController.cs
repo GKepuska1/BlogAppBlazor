@@ -51,6 +51,10 @@ namespace BlogApp.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] BlogDtoCreate blog)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
             return Ok(await _blogService.AddAsync(blog, currentUser.Id));
         }
@@ -59,6 +63,10 @@ namespace BlogApp.Api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] BlogDtoCreate blog)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var currentUser = await _userManager.FindByNameAsync(User.Identity.Name);
             return Ok(await _blogService.UpdateAsync(id, blog, currentUser.Id));
         }

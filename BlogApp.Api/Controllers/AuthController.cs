@@ -22,6 +22,10 @@ namespace BlogApp.Api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var user = await _userManager.FindByNameAsync(request.Username);
             var loginResult = await _userManager.CheckPasswordAsync(user, request.Password);
             if (loginResult)
@@ -35,6 +39,10 @@ namespace BlogApp.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             try
             {
                 var result = await _userManager.CreateAsync(new ApplicationUser
