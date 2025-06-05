@@ -18,6 +18,7 @@ else
             <MudTextField @bind-Value="blogTitle" Label="Title" For="@(() => blogTitle)" Required="true" />
             <MudTextField @bind-Value="blogContent" Label="Content" For="@(() => blogContent)" Required="true"
                           Lines="5" MultiLine="true" />
+            <MudTextField @bind-Value="tagInput" Label="Tags (comma separated)" />
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitForm">Submit</MudButton>
         </MudForm>
     </MudPaper>
@@ -36,21 +37,22 @@ else
     private string blogTitle = string.Empty;
     private string blogContent = string.Empty;
     private bool loadingSubmit = false;
+    private string tagInput = string.Empty;
 
 
     private async Task CreateBlogPostAsync()
     {
         loadingSubmit = true;
+        var tags = tagInput.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                           .Select(t => new TagDto { Name = t })
+                           .ToList();
+
         var newBlog = new BlogDtoCreate
-            {
-                Name = blogTitle,
-                Content = blogContent,
-                Tags = new List<TagDto>
-            {
-                new TagDto { Name = "Tag1" },
-                new TagDto { Name = "Tag2" }
-            }
-            };
+        {
+            Name = blogTitle,
+            Content = blogContent,
+            Tags = tags
+        };
 
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/blog")
             {
@@ -66,6 +68,7 @@ else
         {
             blogTitle = string.Empty;
             blogContent = string.Empty;
+            tagInput = string.Empty;
             await OnTrigger.InvokeAsync();
         }
         else
