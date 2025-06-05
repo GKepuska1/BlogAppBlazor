@@ -38,20 +38,32 @@
 
     private async Task HandleLogin()
     {
-        var response = await _httpClient.PostAsJsonAsync("api/auth/login", loginModel);
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var result = await response.Content.ReadAsStringAsync();
-            await _localStorage.SetItemAsync("authToken", result);
-            NavigationManager.NavigateTo("/", forceLoad: true);
-        }
-        else
-        {
-            var result = await response.Content.ReadFromJsonAsync<List<string>>();
-            foreach (var error in result)
+            var response = await _httpClient.PostAsJsonAsync("api/auth/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
             {
-                _snackbar.Add(error, Severity.Error);
+                var result = await response.Content.ReadAsStringAsync();
+                await _localStorage.SetItemAsync("authToken", result);
+                NavigationManager.NavigateTo("/", forceLoad: true);
             }
+            else
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<string>>() ?? new List<string> { "Login failed." };
+                foreach (var error in result)
+                {
+                    _snackbar.Add(error, Severity.Error);
+                }
+            }
+        }
+        catch (HttpRequestException)
+        {
+            _snackbar.Add("Could not reach server. Ensure the API is running.", Severity.Error);
+        }
+        catch
+        {
+            _snackbar.Add("An unexpected error occurred during login.", Severity.Error);
         }
     }
 
