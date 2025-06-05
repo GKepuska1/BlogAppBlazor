@@ -6,5 +6,9 @@ namespace BlogApp.Domain.Entities
     {
         public string Firstname { get; set; }
         public string Lastname { get; set; }
+
+        public bool SubscriptionActive { get; set; }
+        public DateTime LastPostDate { get; set; }
+        public int PostCount { get; set; }
     }
 }

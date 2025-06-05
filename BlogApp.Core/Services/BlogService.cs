@@ -30,16 +30,43 @@ namespace BlogApp.Core.Services
 
         public async Task<BlogDto> AddAsync(BlogDtoCreate blogDto, string userId)
         {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                throw new KeyNotFoundException("User not found");
+
+            if (!user.SubscriptionActive)
+            {
+                if (user.LastPostDate.Date == DateTime.UtcNow.Date && user.PostCount >= 1)
+                    throw new InvalidOperationException("Daily post limit reached");
+
+                if (user.LastPostDate.Date != DateTime.UtcNow.Date)
+                {
+                    user.PostCount = 0;
+                    user.LastPostDate = DateTime.UtcNow.Date;
+                }
+            }
+
+            var blog = await _dbContext.Blogs.AddAsync(new Blog()
             var blog = new Blog
             {
                 Content = blogDto.Content,
                 CreatedAt = DateTime.Now,
                 Name = blogDto.Name,
+                UserId = userId
+            });
+
+            if (!user.SubscriptionActive)
+            {
+                user.PostCount += 1;
+                user.LastPostDate = DateTime.UtcNow.Date;
+            }
+
                 UserId = userId,
                 BlogTags = new List<BlogTag>()
             };
 
             var created = await _dbContext.Blogs.AddAsync(blog);
+
             await _dbContext.SaveChangesAsync();
 
             if (blogDto.Tags != null && blogDto.Tags.Any())
