@@ -46,26 +46,22 @@ namespace BlogApp.Core.Services
                 }
             }
 
-            var blog = await _dbContext.Blogs.AddAsync(new Blog()
             var blog = new Blog
             {
                 Content = blogDto.Content,
                 CreatedAt = DateTime.Now,
                 Name = blogDto.Name,
-                UserId = userId
-            });
+                UserId = userId,
+                BlogTags = new List<BlogTag>()
+            };
+
+            var created = await _dbContext.Blogs.AddAsync(blog);
 
             if (!user.SubscriptionActive)
             {
                 user.PostCount += 1;
                 user.LastPostDate = DateTime.UtcNow.Date;
             }
-
-                UserId = userId,
-                BlogTags = new List<BlogTag>()
-            };
-
-            var created = await _dbContext.Blogs.AddAsync(blog);
 
             await _dbContext.SaveChangesAsync();
 
