@@ -48,11 +48,14 @@ Each blog post contains:
      cd frontend
      npm install
      ```
-   - Start the API and React frontend together:
+   - In one terminal start the API:
      ```bash
-     npm run dev:all
+     dotnet watch --project ../BlogApp.Api
      ```
-   - This starts `dotnet watch` for the API and Vite for the React app.
+   - In another terminal start the React frontend:
+     ```bash
+     npm run dev
+     ```
 
 ### Technologies Used
 
