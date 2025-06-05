@@ -1,4 +1,6 @@
-﻿namespace BlogApp.Domain.Dtos
+using System.ComponentModel.DataAnnotations;
+
+namespace BlogApp.Domain.Dtos
 {
     public class CommentDto : CommentDtoCreate
     {
@@ -9,6 +11,7 @@
 
     public class CommentDtoCreate
     {
+        [Required]
         public string Content { get; set; }
     }
 }

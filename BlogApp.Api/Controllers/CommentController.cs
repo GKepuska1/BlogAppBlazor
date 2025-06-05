@@ -33,6 +33,10 @@ namespace BlogApp.Api.Controllers
         [HttpPost("{blogId}")]
         public async Task<IActionResult> Post(int blogId, [FromBody] CommentDtoCreate commentDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var blog = await _blogService.GetByIdAsync(blogId);
             if (blog == null)
             {
@@ -46,6 +50,10 @@ namespace BlogApp.Api.Controllers
         [HttpPut("{blogId}/{id}")]
         public async Task<IActionResult> Put(int blogId, int id, [FromBody] CommentDtoCreate commentDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var blog = await _blogService.GetByIdAsync(blogId);
             if (blog == null)
             {
