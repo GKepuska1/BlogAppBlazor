@@ -57,7 +57,7 @@ namespace BlogApp.Api.Controllers
         }
 
 
-        [HttpDelete("{blogId}/{id}")]
+        [HttpDelete("{blogId}/{commentId}")]
         public async Task<IActionResult> Delete(int blogId, int commentId)
         {
             var blog = await _blogService.GetByIdAsync(blogId);
