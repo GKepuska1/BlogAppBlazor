@@ -1,7 +1,7 @@
 
 # BlogApp
 
-A full-stack blog application built with a **React** frontend and an **ASP.NET Core API (.NET 8)** backend. The original Blazor WebAssembly UI has been replaced with React styled using **Tailwind CSS**. The backend continues to use **SQL Server** for data storage.
+A full-stack blog application built with a **React** frontend and an **ASP.NET Core API (.NET 8)** backend. The original Blazor WebAssembly UI has been replaced with React styled using **plain CSS**. The backend continues to use **SQL Server** for data storage.
 
 ## Features
 
@@ -10,7 +10,7 @@ A full-stack blog application built with a **React** frontend and an **ASP.NET C
 - **Commenting System**: Users can open a blog post and leave comments, similar to social media.
 - **News Feed**: Blog posts are displayed as a list on the homepage.
 - **Search Functionality**: Search blog posts by title.
-- **Modern UI**: React components styled with Tailwind CSS.
+- **Modern UI**: React components styled with plain CSS.
 
 ## Blog Post Details
 
@@ -59,7 +59,7 @@ Each blog post contains:
 
 ### Technologies Used
 
-- **Frontend**: React + Vite with Tailwind CSS
+- **Frontend**: React + Vite with plain CSS
 - **Backend**: ASP.NET Core API
 - **Database**: SQL Server
 - **ORM**: Entity Framework Core
