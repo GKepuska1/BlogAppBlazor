@@ -1,7 +1,7 @@
 
 # BlogApp
 
-A full-stack blog application built with **Blazor WebAssembly (.NET 8)** for the frontend, **ASP.NET Core API (.NET 8)** for the backend, and **SQL Server** as the database. The app provides CRUD functionality for blog posts and allows users to leave comments, all styled with the **MudBlazor** UI library.
+A full-stack blog application built with a **React** frontend and an **ASP.NET Core API (.NET 8)** backend. The original Blazor WebAssembly UI has been replaced with React styled using **Tailwind CSS**. The backend continues to use **SQL Server** for data storage.
 
 ## Features
 
@@ -10,7 +10,7 @@ A full-stack blog application built with **Blazor WebAssembly (.NET 8)** for the
 - **Commenting System**: Users can open a blog post and leave comments, similar to social media.
 - **News Feed**: Blog posts are displayed as a list on the homepage.
 - **Search Functionality**: Search blog posts by title.
-- **Modern UI**: Built using the partially MudBlazor library.
+- **Modern UI**: React components styled with Tailwind CSS.
 
 ## Blog Post Details
 
@@ -43,16 +43,20 @@ Each blog post contains:
      CREATE DATABASE BlogApp;
      ```
 3. **Run the Application**:
-   - In Visual Studio, set **multiple startup projects**:
-     - `BlogApp` (Frontend)
-     - `BlogApp.Api` (Backend)
-
-   - The migration will be applied when the app is running.
-   - Start the solution.
+   - Install frontend dependencies:
+     ```bash
+     cd frontend
+     npm install
+     ```
+   - Start the API and React frontend together:
+     ```bash
+     npm run dev:all
+     ```
+   - This starts `dotnet watch` for the API and Vite for the React app.
 
 ### Technologies Used
 
-- **Frontend**: Blazor WebAssembly with MudBlazor
+- **Frontend**: React + Vite with Tailwind CSS
 - **Backend**: ASP.NET Core API
 - **Database**: SQL Server
 - **ORM**: Entity Framework Core
