@@ -20,14 +20,14 @@
 }
 else
 {
-    <MudPaper Elevation="0" Height="800px" Width="100%" Style="display: flex; flex-direction: column; overflow-y: auto;">
+    <MudPaper Elevation="0" Width="100%" Style="min-height:100vh; display:flex; flex-direction:column; overflow-y:auto;">
         <MudContainer MaxWidth="MaxWidth.Medium">
             <Search OnTrigger="SearchBlogs"></Search>
             <MudContainer MaxWidth="MaxWidth.Small">
                 <CreateBlog OnTrigger="(async () => await RefreshParent())"></CreateBlog>
             </MudContainer>
 
-            <MudPaper Elevation="0" Height="400px" Width="100%">
+            <MudPaper Elevation="0" Width="100%">
                 <MudContainer>
                     @foreach (var blog in _blogs)
                     {
