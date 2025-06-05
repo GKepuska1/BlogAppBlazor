@@ -10,7 +10,7 @@ A full-stack blog application built with **Blazor WebAssembly (.NET 8)** for the
 - **Commenting System**: Users can open a blog post and leave comments, similar to social media.
 - **News Feed**: Blog posts are displayed as a list on the homepage.
 - **Search Functionality**: Search blog posts by title.
-- **Modern UI**: Built using the partily MudBlazor library.
+- **Modern UI**: Built using the partially MudBlazor library.
 
 ## Blog Post Details
 
