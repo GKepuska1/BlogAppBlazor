@@ -1,4 +1,6 @@
-﻿namespace BlogApp.Domain.Dtos
+using System.ComponentModel.DataAnnotations;
+
+namespace BlogApp.Domain.Dtos
 {
     public class BlogDto : BlogDtoCreate
     {
@@ -10,8 +12,12 @@
 
     public class BlogDtoCreate
     {
+        [Required]
         public string Name { get; set; }
+
+        [Required]
         public string Content { get; set; }
+
         public List<TagDto> Tags { get; set; }
     }
 }

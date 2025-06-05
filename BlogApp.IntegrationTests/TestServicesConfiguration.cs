@@ -1,6 +1,7 @@
 ﻿using BlogApp.Core.Context;
 using BlogApp.Core.Services;
 using BlogApp.Domain.Entities;
+using System;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +54,26 @@ namespace BlogApp.IntegrationTests
                 DatabaseName = databaseName,
                 ServiceProvider = serviceProvider,
                 ConnectionString = connectionString
+            };
+        }
+
+        public static TestSettings ConfigureInMemoryDatabaseAndServices()
+        {
+            var services = new ServiceCollection();
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
+
+            services.AddDbContext<IAppDbContext, AppDbContext>(options =>
+                options.UseInMemoryDatabase($"InMemoryDb_{Guid.NewGuid()}"));
+
+            services = InjectServices(services, configuration);
+            services = InjectApplicationUser(services);
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            return new TestSettings
+            {
+                ServiceProvider = serviceProvider,
+                ConnectionString = "InMemory"
             };
         }
 

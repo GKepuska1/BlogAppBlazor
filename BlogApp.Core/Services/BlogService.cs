@@ -47,6 +47,7 @@ namespace BlogApp.Core.Services
             }
 
             var blog = await _dbContext.Blogs.AddAsync(new Blog()
+            var blog = new Blog
             {
                 Content = blogDto.Content,
                 CreatedAt = DateTime.Now,
@@ -60,9 +61,50 @@ namespace BlogApp.Core.Services
                 user.LastPostDate = DateTime.UtcNow.Date;
             }
 
+                UserId = userId,
+                BlogTags = new List<BlogTag>()
+            };
+
+            var created = await _dbContext.Blogs.AddAsync(blog);
+
             await _dbContext.SaveChangesAsync();
 
-            var createdBlogDto = _mapper.Map<BlogDto>(blog.Entity);
+            if (blogDto.Tags != null && blogDto.Tags.Any())
+            {
+                foreach (var tagDto in blogDto.Tags)
+                {
+                    var tagName = tagDto.Name?.Trim().ToLower();
+                    if (string.IsNullOrWhiteSpace(tagName))
+                    {
+                        continue;
+                    }
+
+                    var tag = await _dbContext.Tags
+                        .FirstOrDefaultAsync(t => t.Name.ToLower() == tagName);
+                    if (tag == null)
+                    {
+                        tag = (await _dbContext.Tags.AddAsync(new Tag
+                        {
+                            Name = tagName,
+                            CreatedAt = DateTime.Now,
+                            UpdatedAt = DateTime.Now
+                        })).Entity;
+                        await _dbContext.SaveChangesAsync();
+                    }
+
+                    blog.BlogTags.Add(new BlogTag
+                    {
+                        BlogId = blog.Id,
+                        TagId = tag.Id,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    });
+                }
+
+                await _dbContext.SaveChangesAsync();
+            }
+
+            var createdBlogDto = await GetByIdAsync(created.Entity.Id);
             return createdBlogDto;
         }
 
@@ -71,6 +113,8 @@ namespace BlogApp.Core.Services
             var blog = await _dbContext.Blogs
                                        .Include(x => x.User)
                                        .Include(x => x.Comments.OrderByDescending(c => c.CreatedAt))
+                                       .Include(x => x.BlogTags)
+                                       .ThenInclude(x => x.Tag)
                                        .FirstOrDefaultAsync(x => x.Id == blogId);
 
             if (blog == null)
@@ -121,7 +165,25 @@ namespace BlogApp.Core.Services
             {
                 throw new KeyNotFoundException("Blog not found");
             }
+            var blogTags = await _dbContext.BlogTags.Where(bt => bt.BlogId == id).ToListAsync();
+            _dbContext.BlogTags.RemoveRange(blogTags);
+
             _dbContext.Blogs.Remove(blog);
+            await _dbContext.SaveChangesAsync();
+
+            foreach (var bt in blogTags)
+            {
+                var stillUsed = await _dbContext.BlogTags.AnyAsync(x => x.TagId == bt.TagId);
+                if (!stillUsed)
+                {
+                    var tag = await _dbContext.Tags.FindAsync(bt.TagId);
+                    if (tag != null)
+                    {
+                        _dbContext.Tags.Remove(tag);
+                    }
+                }
+            }
+
             await _dbContext.SaveChangesAsync();
         }
 

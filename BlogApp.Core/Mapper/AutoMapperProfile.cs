@@ -8,7 +8,11 @@ namespace BlogApp.Core.Mapper
     {
         public AutoMapperProfile()
         {
-            CreateMap<Blog, BlogDto>().ReverseMap();
+            CreateMap<Tag, TagDto>().ReverseMap();
+
+            CreateMap<Blog, BlogDto>()
+                .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => src.BlogTags.Select(bt => bt.Tag)))
+                .ReverseMap();
             CreateMap<Blog, BlogDtoCreate>().ReverseMap();
 
             CreateMap<Comment, CommentDto>()
