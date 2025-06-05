@@ -56,3 +56,20 @@ Each blog post contains:
 - **Backend**: ASP.NET Core API
 - **Database**: SQL Server
 - **ORM**: Entity Framework Core
+
+## Running Tests
+
+This solution contains unit tests and early integration tests. You can run them
+from the repository root using the `dotnet test` command:
+
+```bash
+dotnet test
+```
+
+This runs the projects `BlogApp.UnitTests` and `BlogApp.IntegrationTests`.
+
+- **Unit tests** require no additional setup.
+- **Integration tests** need a reachable SQL Server instance. Provide a
+  connection string in `BlogApp.IntegrationTests/appsettings.json` using the
+  `ConnectionStrings:TestDb` key. The test project will create and later remove
+  a temporary database when it runs.
