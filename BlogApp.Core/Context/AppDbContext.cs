@@ -30,6 +30,19 @@ namespace BlogApp.Core.Context
         public DbSet<BlogTag> BlogTags { get; set; }
         public DbSet<Tag> Tags { get; set; }
 
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.Entity<Tag>()
+                   .HasIndex(t => t.Name)
+                   .IsUnique();
+
+            builder.Entity<BlogTag>()
+                   .HasIndex(bt => new { bt.BlogId, bt.TagId })
+                   .IsUnique();
+        }
+
         public async Task<int> SaveChangesAsync()
         {
             return await base.SaveChangesAsync();
