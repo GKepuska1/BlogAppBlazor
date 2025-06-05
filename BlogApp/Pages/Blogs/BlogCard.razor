@@ -58,10 +58,10 @@ else
                     }
                     @if (BlogDtoData.Tags != null && BlogDtoData.Tags.Count > 0)
                     {
-                        <MudChipSet Class="mt-2">
+                        <MudChipSet T="string" Class="mt-2">
                             @foreach (var tag in BlogDtoData.Tags)
                             {
-                                <MudChip Color="Color.Primary" Variant="Variant.Outlined">@tag.Name</MudChip>
+                                <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined">@tag.Name</MudChip>
                             }
                         </MudChipSet>
                     }
