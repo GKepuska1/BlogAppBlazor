@@ -2,38 +2,40 @@ import { useState } from 'react'
 import './App.css'
 
 function Login({ onLogin }) {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    await onLogin({ username, password })
-    setUsername('')
-    setPassword('')
+  const handleGuestLogin = async () => {
+    setLoading(true)
+    try {
+      await onLogin()
+    } catch (error) {
+      console.error('Login failed:', error)
+      alert('Failed to login as guest. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="container">
-      <h1 className="heading">Login</h1>
-      <form onSubmit={handleSubmit} className="form">
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button className="button" type="submit">
-          Login
+      <div className="welcome-container">
+        <h1 className="heading">Welcome to BlogApp</h1>
+        <p className="welcome-text">
+          A simple blogging platform where you can share your thoughts and read what others have to say.
+        </p>
+        <button
+          className="button button-large"
+          onClick={handleGuestLogin}
+          disabled={loading}
+        >
+          {loading ? 'Logging in...' : 'Login as Guest'}
         </button>
-      </form>
+        <p className="info-text">
+          Click the button above to get started with a randomly generated username!
+        </p>
+      </div>
     </div>
   )
 }
 
 export default Login
-

@@ -1,68 +1,65 @@
-import { useEffect, useState } from 'react'
-import { fetchBlogs, createBlog, login, setAuthToken } from './api'
+import { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { guestLogin, setAuthToken, getCurrentUsername } from './api'
 import Login from './Login'
+import Header from './components/Header'
+import Home from './pages/Home'
+import BlogPost from './pages/BlogPost'
+import CreateBlog from './pages/CreateBlog'
+import EditBlog from './pages/EditBlog'
 import './App.css'
 
 function App() {
-  const [blogs, setBlogs] = useState([])
-  const [title, setTitle] = useState('')
-  const [tags, setTags] = useState('')
-  const [token, setToken] = useState(localStorage.getItem('token') || '')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (token) {
-      setAuthToken(token)
-      fetchBlogs().then(setBlogs).catch(console.error)
+    // Check if user is already logged in
+    const token = localStorage.getItem('token')
+    const username = localStorage.getItem('username')
+
+    if (token && username) {
+      setAuthToken(token, username)
+      setIsAuthenticated(true)
     }
-  }, [token])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    const blog = await createBlog({
-      title,
-      tags: tags.split(',').map((t) => t.trim()),
-    })
-    setBlogs([...blogs, blog])
-    setTitle('')
-    setTags('')
+    setLoading(false)
+  }, [])
+
+  const handleLogin = async () => {
+    try {
+      await guestLogin()
+      setIsAuthenticated(true)
+    } catch (error) {
+      console.error('Login failed:', error)
+      throw error
+    }
   }
 
-  const handleLogin = async (credentials) => {
-    const t = await login(credentials)
-    setToken(t)
+  if (loading) {
+    return <div className="loading">Loading...</div>
   }
 
-  if (!token) {
+  if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />
   }
 
   return (
-    <div className="container">
-      <h1 className="heading">Blogs</h1>
-      <form onSubmit={handleSubmit} className="form">
-        <input
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <input
-          placeholder="Tags comma separated"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-        />
-        <button className="button" type="submit">
-          Create
-        </button>
-      </form>
-      <ul className="list">
-        {blogs.map((b) => (
-          <li key={b.id} className="list-item">
-            <h2>{b.title}</h2>
-            {b.tags && <p className="tags">Tags: {b.tags.join(', ')}</p>}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <Router>
+      <div className="app">
+        <Header />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/blog/:id" element={<BlogPost />} />
+            <Route path="/create" element={<CreateBlog />} />
+            <Route path="/edit/:id" element={<EditBlog />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   )
 }
 
