@@ -52,6 +52,7 @@ namespace BlogApp.Core
             services.AddScoped<ICommentService, CommentService>();
 
             services.AddScoped<IJwtService, JwtService>();
+            services.AddSingleton<IGuestNameGenerator, GuestNameGenerator>();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
         }
