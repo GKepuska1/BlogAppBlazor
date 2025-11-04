@@ -1,3 +1,4 @@
+using BlogApp.Core.Services;
 using BlogApp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,11 +14,13 @@ namespace BlogApp.Api.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _configuration;
+        private readonly IBitcoinPaymentService _bitcoinPaymentService;
 
-        public SubscriptionController(UserManager<ApplicationUser> userManager, IConfiguration configuration)
+        public SubscriptionController(UserManager<ApplicationUser> userManager, IConfiguration configuration, IBitcoinPaymentService bitcoinPaymentService)
         {
             _userManager = userManager;
             _configuration = configuration;
+            _bitcoinPaymentService = bitcoinPaymentService;
         }
 
         [HttpGet("check")]
@@ -79,5 +82,59 @@ namespace BlogApp.Api.Controllers
             }
             return Ok();
         }
+
+        // Bitcoin Payment Endpoints
+        [HttpGet("bitcoin/info")]
+        public IActionResult GetBitcoinPaymentInfo()
+        {
+            return Ok(new
+            {
+                address = _bitcoinPaymentService.GetPaymentAddress(),
+                amount = _bitcoinPaymentService.GetSubscriptionPrice(),
+                currency = "BTC"
+            });
+        }
+
+        [HttpPost("bitcoin/verify")]
+        public async Task<IActionResult> VerifyBitcoinPayment([FromBody] BitcoinPaymentVerification payment)
+        {
+            if (string.IsNullOrWhiteSpace(payment.TransactionId))
+            {
+                return BadRequest(new { message = "Transaction ID is required" });
+            }
+
+            var user = await _userManager.FindByNameAsync(User.Identity!.Name);
+            if (user == null)
+                return Unauthorized();
+
+            // Check if user already has active subscription
+            if (user.SubscriptionActive)
+            {
+                return BadRequest(new { message = "You already have an active subscription" });
+            }
+
+            // Verify the Bitcoin transaction
+            var isValid = await _bitcoinPaymentService.VerifyPayment(payment.TransactionId, user.Id);
+
+            if (!isValid)
+            {
+                return BadRequest(new { message = "Invalid or unconfirmed transaction. Please ensure you sent the correct amount to the correct address." });
+            }
+
+            // Activate subscription
+            user.SubscriptionActive = true;
+            user.PostCount = 0; // Reset daily post count
+            await _userManager.UpdateAsync(user);
+
+            return Ok(new {
+                message = "Payment verified! Your subscription is now active.",
+                subscriptionActive = true
+            });
+        }
+    }
+
+    public class BitcoinPaymentVerification
+    {
+        public string TransactionId { get; set; } = string.Empty;
     }
 }

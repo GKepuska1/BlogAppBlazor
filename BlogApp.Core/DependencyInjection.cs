@@ -53,6 +53,7 @@ namespace BlogApp.Core
 
             services.AddScoped<IJwtService, JwtService>();
             services.AddSingleton<IGuestNameGenerator, GuestNameGenerator>();
+            services.AddScoped<IBitcoinPaymentService, BitcoinPaymentService>();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
         }

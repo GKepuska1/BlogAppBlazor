@@ -18,6 +18,7 @@ function Header() {
         <nav className="nav">
           <Link to="/" className="nav-link">Home</Link>
           <Link to="/create" className="nav-link">Create Post</Link>
+          <Link to="/upgrade" className="nav-link upgrade-link">⭐ Upgrade</Link>
           <span className="username">Hello, {username}!</span>
           <button onClick={handleLogout} className="button button-small">
             Logout
