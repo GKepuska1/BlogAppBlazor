@@ -1,7 +1,9 @@
 
 # BlogApp
 
-A full-stack blog application built with a **React** frontend and an **ASP.NET Core API (.NET 8)** backend. The original Blazor WebAssembly UI has been replaced with React styled using **plain CSS**. The backend continues to use **SQL Server** for data storage.
+A full-stack blog application built with a **React** frontend and an **ASP.NET Core API (.NET 8)** backend, styled using **plain CSS**. The backend uses **SQL Server** for data storage.
+
+> **Note:** This project was originally built with Blazor WebAssembly but has been fully migrated to React. The repository name "BlogAppBlazor" is historical and no Blazor code remains.
 
 ## Features
 

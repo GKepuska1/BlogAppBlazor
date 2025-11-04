@@ -52,7 +52,6 @@ Stripe.StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 var app = builder.Build();
 
 app.UseCors("AllowAll");
-app.UseStaticFiles();
 app.MigrateDatabase<AppDbContext>();
 app.UseMiddleware<ErrorHandlerMiddleware>();
 
