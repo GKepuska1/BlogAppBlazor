@@ -1,7 +1,7 @@
+using BlogApp.Core.Data;
 using BlogApp.Core.Services;
 using BlogApp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Stripe;
 using Stripe.Checkout;
@@ -12,13 +12,16 @@ namespace BlogApp.Api.Controllers
     [ApiController, Authorize]
     public class SubscriptionController : ControllerBase
     {
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IRedisUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly IBitcoinPaymentService _bitcoinPaymentService;
 
-        public SubscriptionController(UserManager<ApplicationUser> userManager, IConfiguration configuration, IBitcoinPaymentService bitcoinPaymentService)
+        public SubscriptionController(
+            IRedisUserRepository userRepository,
+            IConfiguration configuration,
+            IBitcoinPaymentService bitcoinPaymentService)
         {
-            _userManager = userManager;
+            _userRepository = userRepository;
             _configuration = configuration;
             _bitcoinPaymentService = bitcoinPaymentService;
         }
@@ -26,7 +29,7 @@ namespace BlogApp.Api.Controllers
         [HttpGet("check")]
         public async Task<IActionResult> CheckLimit()
         {
-            var user = await _userManager.FindByNameAsync(User.Identity!.Name);
+            var user = await _userRepository.GetByUsernameAsync(User.Identity!.Name);
             if (user == null)
                 return Unauthorized();
 
@@ -39,7 +42,7 @@ namespace BlogApp.Api.Controllers
         {
             var domain = _configuration["AppUrl"] ?? string.Empty;
             StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
-            
+
             var options = new SessionCreateOptions
             {
                 Mode = "subscription",
@@ -72,11 +75,11 @@ namespace BlogApp.Api.Controllers
                 var userId = session?.ClientReferenceId;
                 if (!string.IsNullOrEmpty(userId))
                 {
-                    var user = await _userManager.FindByIdAsync(userId);
+                    var user = await _userRepository.GetByIdAsync(userId);
                     if (user != null)
                     {
                         user.SubscriptionActive = true;
-                        await _userManager.UpdateAsync(user);
+                        await _userRepository.UpdateAsync(user);
                     }
                 }
             }
@@ -103,7 +106,7 @@ namespace BlogApp.Api.Controllers
                 return BadRequest(new { message = "Transaction ID is required" });
             }
 
-            var user = await _userManager.FindByNameAsync(User.Identity!.Name);
+            var user = await _userRepository.GetByUsernameAsync(User.Identity!.Name);
             if (user == null)
                 return Unauthorized();
 
@@ -124,7 +127,7 @@ namespace BlogApp.Api.Controllers
             // Activate subscription
             user.SubscriptionActive = true;
             user.PostCount = 0; // Reset daily post count
-            await _userManager.UpdateAsync(user);
+            await _userRepository.UpdateAsync(user);
 
             return Ok(new {
                 message = "Payment verified! Your subscription is now active.",

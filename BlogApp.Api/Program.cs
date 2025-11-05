@@ -1,7 +1,6 @@
 using BlogApp.Api;
 using BlogApp.Api.Middleware;
 using BlogApp.Core;
-using BlogApp.Core.Context;
 using Microsoft.OpenApi.Models;
 using Stripe;
 
@@ -52,7 +51,6 @@ Stripe.StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 var app = builder.Build();
 
 app.UseCors("AllowAll");
-app.MigrateDatabase<AppDbContext>();
 app.UseMiddleware<ErrorHandlerMiddleware>();
 
 if (app.Environment.IsDevelopment())

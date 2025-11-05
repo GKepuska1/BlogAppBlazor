@@ -1,10 +1,9 @@
 ﻿using BlogApp.Core.Constants;
-using BlogApp.Core.Context;
+using BlogApp.Core.Data;
 using BlogApp.Core.Services;
 using BlogApp.Domain.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -16,20 +15,17 @@ namespace BlogApp.Core
     {
         public static void AddCore(this IServiceCollection services, IConfiguration configuration)
         {
-            var connectionString = configuration["ConnectionString"];
+            var redisConnectionString = configuration["Redis:ConnectionString"] ?? "localhost:6379";
 
-            services.AddDbContext<IAppDbContext, AppDbContext>(options => options.UseSqlServer(connectionString), ServiceLifetime.Transient);
+            // Redis services
+            services.AddSingleton<IRedisService>(sp => new RedisService(redisConnectionString));
+            services.AddScoped<IRedisUserRepository, RedisUserRepository>();
+            services.AddScoped<IRedisBlogRepository, RedisBlogRepository>();
+            services.AddScoped<IRedisCommentRepository, RedisCommentRepository>();
 
-            services.AddIdentityCore<ApplicationUser>(config =>
-            {
-                config.Password.RequiredLength = 6;
-                config.Password.RequireDigit = false;
-                config.Password.RequireLowercase = false;
-                config.Password.RequireNonAlphanumeric = false;
-                config.Password.RequireUppercase = false;
-            })
-            .AddRoles<IdentityRole>()
-            .AddEntityFrameworkStores<AppDbContext>();
+            // Password hasher for user authentication
+            services.AddScoped<IPasswordHasher<ApplicationUser>, PasswordHasher<ApplicationUser>>();
+
             services.AddHttpContextAccessor();
 
             services.AddAuthentication(options =>
@@ -42,11 +38,6 @@ namespace BlogApp.Core
                 var key = Encoding.ASCII.GetBytes(configuration["Jwt:Key"]);
                 options.TokenValidationParameters = TokenValidationConstants.GetValidationParameters(key, configuration);
             });
-
-            services.TryAddScoped<SignInManager<ApplicationUser>>();
-            services.TryAddScoped<RoleManager<IdentityRole>>();
-
-            services.AddTransient<UserManager<ApplicationUser>>();
 
             services.AddScoped<IBlogService, BlogService>();
             services.AddScoped<ICommentService, CommentService>();
