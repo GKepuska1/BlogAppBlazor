@@ -1,0 +1,26 @@
+# Directories
+**/bin/
+**/obj/
+**/out/
+**/node_modules/
+**/dist/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/frontend/
+
+# Files
+**/*.user
+**/*.suo
+**/.DS_Store
+**/Thumbs.db
+**/.git/
+**/.gitignore
+**/.gitattributes
+**/README.md
+**/*.md
+**/docker-compose*.yml
+**/Dockerfile*
+**/.dockerignore
+**/.env
+**/.env.*
