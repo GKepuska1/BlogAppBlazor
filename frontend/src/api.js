@@ -150,3 +150,36 @@ export async function deleteComment(blogId, commentId) {
   if (!res.ok) throw new Error('Failed to delete comment');
   return res.ok;
 }
+
+// Subscription endpoints
+export async function checkSubscriptionLimit() {
+  const res = await fetch(`${API_BASE}/subscription/check`, {
+    headers: authHeader()
+  });
+  if (!res.ok) throw new Error('Failed to check subscription limit');
+  return res.json();
+}
+
+export async function getBitcoinPaymentInfo() {
+  const res = await fetch(`${API_BASE}/subscription/bitcoin/info`, {
+    headers: authHeader()
+  });
+  if (!res.ok) throw new Error('Failed to get Bitcoin payment info');
+  return res.json();
+}
+
+export async function verifyBitcoinPayment(transactionId) {
+  const res = await fetch(`${API_BASE}/subscription/bitcoin/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ transactionId })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to verify payment');
+  }
+
+  return data;
+}

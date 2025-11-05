@@ -7,6 +7,7 @@ import Home from './pages/Home'
 import BlogPost from './pages/BlogPost'
 import CreateBlog from './pages/CreateBlog'
 import EditBlog from './pages/EditBlog'
+import Upgrade from './pages/Upgrade'
 import './App.css'
 
 function App() {
@@ -54,6 +55,7 @@ function App() {
             <Route path="/blog/:id" element={<BlogPost />} />
             <Route path="/create" element={<CreateBlog />} />
             <Route path="/edit/:id" element={<EditBlog />} />
+            <Route path="/upgrade" element={<Upgrade />} />
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
