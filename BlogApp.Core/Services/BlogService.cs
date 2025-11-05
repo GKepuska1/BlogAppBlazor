@@ -1,8 +1,7 @@
-﻿using AutoMapper;
-using BlogApp.Core.Context;
+using AutoMapper;
+using BlogApp.Core.Data;
 using BlogApp.Domain.Dtos;
 using BlogApp.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace BlogApp.Core.Services
 {
@@ -19,21 +18,30 @@ namespace BlogApp.Core.Services
 
     public class BlogService : IBlogService
     {
-        private IAppDbContext _dbContext;
-        private IMapper _mapper;
+        private readonly IRedisBlogRepository _blogRepository;
+        private readonly IRedisUserRepository _userRepository;
+        private readonly IRedisCommentRepository _commentRepository;
+        private readonly IMapper _mapper;
 
-        public BlogService(IAppDbContext dbContext, IMapper mapper)
+        public BlogService(
+            IRedisBlogRepository blogRepository,
+            IRedisUserRepository userRepository,
+            IRedisCommentRepository commentRepository,
+            IMapper mapper)
         {
-            _dbContext = dbContext;
+            _blogRepository = blogRepository;
+            _userRepository = userRepository;
+            _commentRepository = commentRepository;
             _mapper = mapper;
         }
 
         public async Task<BlogDto> AddAsync(BlogDtoCreate blogDto, string userId)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
                 throw new KeyNotFoundException("User not found");
 
+            // Check daily post limit
             if (!user.SubscriptionActive)
             {
                 if (user.LastPostDate.Date == DateTime.UtcNow.Date && user.PostCount >= 1)
@@ -46,163 +54,169 @@ namespace BlogApp.Core.Services
                 }
             }
 
+            // Create blog
             var blog = new Blog
             {
                 Content = blogDto.Content,
-                CreatedAt = DateTime.Now,
                 Name = blogDto.Name,
                 UserId = userId,
-                BlogTags = new List<BlogTag>()
+                User = user.UserName
             };
 
-            var created = await _dbContext.Blogs.AddAsync(blog);
+            var created = await _blogRepository.CreateAsync(blog);
 
+            // Update user post count
             if (!user.SubscriptionActive)
             {
                 user.PostCount += 1;
                 user.LastPostDate = DateTime.UtcNow.Date;
+                await _userRepository.UpdateAsync(user);
             }
 
-            await _dbContext.SaveChangesAsync();
-
+            // Add tags
             if (blogDto.Tags != null && blogDto.Tags.Any())
             {
                 foreach (var tagDto in blogDto.Tags)
                 {
                     var tagName = tagDto.Name?.Trim().ToLower();
                     if (string.IsNullOrWhiteSpace(tagName))
-                    {
                         continue;
-                    }
 
-                    var tag = await _dbContext.Tags
-                        .FirstOrDefaultAsync(t => t.Name.ToLower() == tagName);
-                    if (tag == null)
+                    var tag = new Tag
                     {
-                        tag = (await _dbContext.Tags.AddAsync(new Tag
-                        {
-                            Name = tagName,
-                            CreatedAt = DateTime.Now,
-                            UpdatedAt = DateTime.Now
-                        })).Entity;
-                        await _dbContext.SaveChangesAsync();
-                    }
+                        Name = tagName,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
 
-                    blog.BlogTags.Add(new BlogTag
-                    {
-                        BlogId = blog.Id,
-                        TagId = tag.Id,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now
-                    });
+                    await _blogRepository.AddTagToBlogAsync(created.Id, tag);
                 }
-
-                await _dbContext.SaveChangesAsync();
             }
 
-            var createdBlogDto = await GetByIdAsync(created.Entity.Id);
-            return createdBlogDto;
+            return await GetByIdAsync(created.Id);
         }
 
         public async Task<BlogDto> GetByIdAsync(int blogId)
         {
-            var blog = await _dbContext.Blogs
-                                       .Include(x => x.User)
-                                       .Include(x => x.Comments.OrderByDescending(c => c.CreatedAt))
-                                       .Include(x => x.BlogTags)
-                                       .ThenInclude(x => x.Tag)
-                                       .FirstOrDefaultAsync(x => x.Id == blogId);
-
+            var blog = await _blogRepository.GetByIdAsync(blogId);
             if (blog == null)
-            {
                 throw new KeyNotFoundException("Blog not found");
-            }
 
-            var blogDto = _mapper.Map<BlogDto>(blog);
+            // Get tags
+            var tags = await _blogRepository.GetTagsForBlogAsync(blogId);
+
+            // Get comments
+            var comments = await _commentRepository.GetByBlogIdAsync(blogId);
+
+            var blogDto = new BlogDto
+            {
+                Id = blog.Id,
+                Name = blog.Name,
+                Content = blog.Content,
+                User = blog.User,
+                CreatedAt = blog.CreatedAt,
+                Tags = tags.Select(t => new TagDto { Name = t.Name }).ToList(),
+                Comments = comments.OrderByDescending(c => c.CreatedAt).Select(c => new CommentDto
+                {
+                    Id = c.Id,
+                    Content = c.Content,
+                    Username = c.Username,
+                    CreatedAt = c.CreatedAt,
+                    IsEdited = c.UpdatedAt > c.CreatedAt
+                }).ToList()
+            };
+
             return blogDto;
         }
 
         public async Task<List<BlogDto>> GetPagedResponseAsync(int pageNumber, int pageSize)
         {
-            var blogs = await _dbContext.Blogs
-                                        .Include(x => x.User)
-                                        .Include(x => x.Comments)
-                                        .Include(x => x.BlogTags)
-                                        .ThenInclude(x => x.Tag)
-                                        .OrderByDescending(x => x.CreatedAt)
-                                        .Skip((pageNumber - 1) * pageSize)
-                                        .Take(pageSize)
-                                        .ToListAsync();
+            var blogs = await _blogRepository.GetPagedAsync(pageNumber, pageSize);
 
-            var blogsDto = _mapper.Map<List<BlogDto>>(blogs);
-            return blogsDto;
+            var blogDtos = new List<BlogDto>();
+            foreach (var blog in blogs)
+            {
+                var tags = await _blogRepository.GetTagsForBlogAsync(blog.Id);
+                var comments = await _commentRepository.GetByBlogIdAsync(blog.Id);
+
+                blogDtos.Add(new BlogDto
+                {
+                    Id = blog.Id,
+                    Name = blog.Name,
+                    Content = blog.Content,
+                    User = blog.User,
+                    CreatedAt = blog.CreatedAt,
+                    Tags = tags.Select(t => new TagDto { Name = t.Name }).ToList(),
+                    Comments = comments.Select(c => new CommentDto
+                    {
+                        Id = c.Id,
+                        Content = c.Content,
+                        Username = c.Username,
+                        CreatedAt = c.CreatedAt,
+                        IsEdited = c.UpdatedAt > c.CreatedAt
+                    }).ToList()
+                });
+            }
+
+            return blogDtos;
         }
 
         public async Task<BlogDto> UpdateAsync(int id, BlogDtoCreate blogDto, string userId)
         {
-            var blog = await _dbContext.Blogs.FindAsync(id);
+            var blog = await _blogRepository.GetByIdAsync(id);
             if (blog == null || blog.UserId != userId)
-            {
                 throw new KeyNotFoundException("Blog not found");
-            }
 
             blog.Name = blogDto.Name;
             blog.Content = blogDto.Content;
-            blog.UpdatedAt = DateTime.Now;
-            await _dbContext.SaveChangesAsync();
 
-            return _mapper.Map<BlogDto>(blog);
+            await _blogRepository.UpdateAsync(blog);
+
+            return await GetByIdAsync(id);
         }
 
         public async Task DeleteAsync(int id, string userId)
         {
-            var blog = await _dbContext.Blogs.FindAsync(id);
+            var blog = await _blogRepository.GetByIdAsync(id);
             if (blog == null || blog.UserId != userId)
-            {
                 throw new KeyNotFoundException("Blog not found");
-            }
-            var blogTags = await _dbContext.BlogTags.Where(bt => bt.BlogId == id).ToListAsync();
-            _dbContext.BlogTags.RemoveRange(blogTags);
 
-            _dbContext.Blogs.Remove(blog);
-            await _dbContext.SaveChangesAsync();
+            // Delete associated comments
+            await _commentRepository.DeleteByBlogIdAsync(id);
 
-            foreach (var bt in blogTags)
-            {
-                var stillUsed = await _dbContext.BlogTags.AnyAsync(x => x.TagId == bt.TagId);
-                if (!stillUsed)
-                {
-                    var tag = await _dbContext.Tags.FindAsync(bt.TagId);
-                    if (tag != null)
-                    {
-                        _dbContext.Tags.Remove(tag);
-                    }
-                }
-            }
-
-            await _dbContext.SaveChangesAsync();
+            // Delete blog
+            await _blogRepository.DeleteAsync(id);
         }
 
         public async Task<List<BlogDto>> Search(string term)
         {
             if (string.IsNullOrWhiteSpace(term))
-            {
                 throw new ArgumentException("Search term cannot be empty", nameof(term));
+
+            var blogs = await _blogRepository.SearchByTitleAsync(term);
+
+            var blogDtos = new List<BlogDto>();
+            foreach (var blog in blogs)
+            {
+                var tags = await _blogRepository.GetTagsForBlogAsync(blog.Id);
+
+                blogDtos.Add(new BlogDto
+                {
+                    Id = blog.Id,
+                    Name = blog.Name,
+                    Content = blog.Content,
+                    User = blog.User,
+                    CreatedAt = blog.CreatedAt,
+                    Tags = tags.Select(t => new TagDto { Name = t.Name }).ToList()
+                });
             }
 
-            var blogs = await _dbContext.Blogs
-                .Where(b => b.Name.Contains(term))
-                .Include(x => x.User)
-                .Include(x => x.Comments)
-                .ToListAsync();
-
-            var blogsDto = _mapper.Map<List<BlogDto>>(blogs);
-            return blogsDto;
+            return blogDtos;
         }
 
         public async Task<int> GetTotal()
         {
-            return await _dbContext.Blogs.CountAsync();
+            return await _blogRepository.GetTotalCountAsync();
         }
     }
 }

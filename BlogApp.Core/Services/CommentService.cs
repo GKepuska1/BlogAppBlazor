@@ -1,8 +1,7 @@
-﻿using AutoMapper;
-using BlogApp.Core.Context;
+using AutoMapper;
+using BlogApp.Core.Data;
 using BlogApp.Domain.Dtos;
 using BlogApp.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace BlogApp.Core.Services
 {
@@ -18,38 +17,63 @@ namespace BlogApp.Core.Services
 
     public class CommentService : ICommentService
     {
-        private IAppDbContext _dbContext;
-        private IMapper _mapper;
+        private readonly IRedisCommentRepository _commentRepository;
+        private readonly IRedisUserRepository _userRepository;
+        private readonly IMapper _mapper;
 
-        public CommentService(IAppDbContext dbContext, IMapper mapper)
+        public CommentService(
+            IRedisCommentRepository commentRepository,
+            IRedisUserRepository userRepository,
+            IMapper mapper)
         {
-            _dbContext = dbContext;
+            _commentRepository = commentRepository;
+            _userRepository = userRepository;
             _mapper = mapper;
         }
 
         public async Task<List<CommentDto>> GetByBlogIdAsync(int blogId)
         {
-            var comments = await _dbContext.Comments.Where(x => x.BlogId == blogId)
-                .OrderByDescending(x => x.CreatedAt)
-                .Include(x => x.User)
-                .ToListAsync();
+            var comments = await _commentRepository.GetByBlogIdAsync(blogId);
 
-            return _mapper.Map<List<CommentDto>>(comments);
+            return comments
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(c => new CommentDto
+                {
+                    Id = c.Id,
+                    Content = c.Content,
+                    Username = c.Username,
+                    CreatedAt = c.CreatedAt,
+                    IsEdited = c.UpdatedAt > c.CreatedAt
+                })
+                .ToList();
         }
 
         public async Task<CommentDto> CreateAsync(int blogId, CommentDtoCreate commentDto, string userId)
         {
             try
             {
-                var comment = await _dbContext.Comments.AddAsync(new Comment()
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                    throw new KeyNotFoundException("User not found");
+
+                var comment = new Comment
                 {
                     BlogId = blogId,
                     Content = commentDto.Content,
-                    CreatedAt = DateTime.Now,
-                    UserId = userId
-                });
-                await _dbContext.SaveChangesAsync();
-                return _mapper.Map<CommentDto>(comment.Entity);
+                    UserId = userId,
+                    Username = user.UserName
+                };
+
+                var created = await _commentRepository.CreateAsync(comment);
+
+                return new CommentDto
+                {
+                    Id = created.Id,
+                    Content = created.Content,
+                    Username = created.Username,
+                    CreatedAt = created.CreatedAt,
+                    IsEdited = false
+                };
             }
             catch (Exception ex)
             {
@@ -59,41 +83,36 @@ namespace BlogApp.Core.Services
 
         public async Task DeleteCommentsByBlogIdAsync(int blogId)
         {
-            var comments = await _dbContext.Comments.Where(x => x.BlogId == blogId).ToListAsync();
-            if (comments == null)
-            {
-                throw new KeyNotFoundException("Comment not found");
-            }
-
-            _dbContext.Comments.RemoveRange(comments);
-            await _dbContext.SaveChangesAsync();
+            await _commentRepository.DeleteByBlogIdAsync(blogId);
         }
 
         public async Task<CommentDto> UpdateAsync(int id, CommentDtoCreate commentDto, string userId)
         {
-            var comment = await _dbContext.Comments.FindAsync(id);
+            var comment = await _commentRepository.GetByIdAsync(id);
             if (comment == null || comment.UserId != userId)
-            {
                 throw new KeyNotFoundException("Comment not found");
-            }
 
             comment.Content = commentDto.Content;
-            comment.UpdatedAt = DateTime.Now;
-            await _dbContext.SaveChangesAsync();
+            await _commentRepository.UpdateAsync(comment);
 
-            return _mapper.Map<CommentDto>(comment);
+            return new CommentDto
+            {
+                Id = comment.Id,
+                Content = comment.Content,
+                Username = comment.Username,
+                CreatedAt = comment.CreatedAt,
+                IsEdited = comment.UpdatedAt > comment.CreatedAt
+            };
         }
 
         public async Task<Comment> GetByIdAsync(int commentId)
         {
-            var comment = await _dbContext.Comments.FindAsync(commentId);
-            return comment;
+            return await _commentRepository.GetByIdAsync(commentId);
         }
 
         public async Task DeleteCommentAsync(Comment comment)
         {
-            _dbContext.Comments.Remove(comment);
-            await _dbContext.SaveChangesAsync();
+            await _commentRepository.DeleteAsync(comment.Id);
         }
     }
 }
