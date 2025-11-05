@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: blogapp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - blogapp-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: BlogApp.Api/Dockerfile
+    container_name: blogapp-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - Redis__ConnectionString=redis:6379
+      - Jwt__Key=pReSimatERiaNTIchIRaNARaterupRit
+      - Jwt__Issuer=blogapp.api
+      - Jwt__Audience=blogapp.react
+      - Stripe__SecretKey=${STRIPE_SECRET_KEY:-sk_test_dummy}
+      - Stripe__WebhookSecret=${STRIPE_WEBHOOK_SECRET:-whsec_dummy}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - blogapp-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: blogapp-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - blogapp-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  blogapp-network:
+    driver: bridge
